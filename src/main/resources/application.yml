@@ -1,6 +1,11 @@
 spring:
   application:
     name: papertradex-backend
+  cache:
+    type: caffeine
+    caffeine:
+      spec: expireAfterWrite=30s
+
 
   datasource:
     url: jdbc:h2:mem:papertradex;DB_CLOSE_DELAY=-1

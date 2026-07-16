@@ -14,7 +14,8 @@ import {
   Menu,
   X,
   User as UserIcon,
-  Search
+  Search,
+  Star
 } from 'lucide-react';
 
 interface TickerStock {
@@ -30,8 +31,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tickerStocks, setTickerStocks] = useState<TickerStock[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
-  // Fetch ticker stock data every 5 seconds to simulate live ticks
+  // Fetch ticker stock data every 10 seconds to simulate live ticks
   useEffect(() => {
     const fetchTicker = async () => {
       try {
@@ -44,21 +46,43 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       }
     };
     fetchTicker();
-    const interval = setInterval(fetchTicker, 5000);
+    const interval = setInterval(fetchTicker, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Debounced live search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.trim().length >= 1) {
+        try {
+          const res = await api.get(`/stocks?q=${searchQuery}`);
+          if (res.data.success) {
+            setSuggestions(res.data.data);
+          }
+        } catch (err) {
+          console.error('Error fetching search suggestions:', err);
+        }
+      } else {
+        setSuggestions([]);
+      }
+    }, 200);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/stocks/${searchQuery.trim().toUpperCase()}`);
       setSearchQuery('');
+      setSuggestions([]);
     }
   };
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Portfolio', path: '/portfolio', icon: Briefcase },
+    { name: 'Watchlist', path: '/watchlist', icon: Star },
     { name: 'Holdings', path: '/holdings', icon: TrendingUp },
     { name: 'Transactions', path: '/transactions', icon: History },
     { name: 'News', path: '/news', icon: Newspaper },
@@ -108,17 +132,41 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               </div>
             </div>
 
-            {/* Search Stock Form */}
-            <form onSubmit={handleSearch} className="px-2 relative">
-              <input
-                type="text"
-                placeholder="Search stock symbol..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#0B1020]/80 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-text focus:outline-none focus:border-primary transition"
-              />
-              <Search className="absolute left-4 top-2.5 w-3.5 h-3.5 text-mutedText" />
-            </form>
+            {/* Search Stock Form with Live Suggestions */}
+            <div className="px-2 relative">
+              <form onSubmit={handleSearch} className="relative">
+                <input
+                  type="text"
+                  placeholder="Search stock symbol..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-[#0B1020]/80 border border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-text focus:outline-none focus:border-primary transition"
+                />
+                <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-mutedText" />
+              </form>
+
+              {suggestions.length > 0 && (
+                <div className="absolute left-2 right-2 mt-1 bg-[#111827] border border-white/15 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto scrollbar-none divide-y divide-white/5">
+                  {suggestions.map((s) => (
+                    <div
+                      key={s.symbol}
+                      onClick={() => {
+                        navigate(`/stocks/${s.symbol}`);
+                        setSearchQuery('');
+                        setSuggestions([]);
+                      }}
+                      className="px-3 py-2 hover:bg-white/5 cursor-pointer text-left transition flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="text-white font-bold text-xs block">{s.symbol}</span>
+                        <span className="text-[10px] text-mutedText block truncate max-w-[140px]">{s.companyName}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-primary">${Number(s.lastPrice).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <nav className="space-y-1.5">
               {navItems.map((item) => {
@@ -139,6 +187,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   </Link>
                 );
               })}
+
 
               {isAdmin && (
                 <Link

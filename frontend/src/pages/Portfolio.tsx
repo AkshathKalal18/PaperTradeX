@@ -40,6 +40,8 @@ export const Portfolio: React.FC = () => {
 
   useEffect(() => {
     fetchPortfolios();
+    const interval = setInterval(fetchPortfolios, 20000); // 20 seconds refresh
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

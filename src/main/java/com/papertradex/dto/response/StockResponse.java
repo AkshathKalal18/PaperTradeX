@@ -17,10 +17,16 @@ public class StockResponse {
     private String symbol;
     private String companyName;
     private BigDecimal lastPrice;
+    private BigDecimal open;
+    private BigDecimal high;
+    private BigDecimal low;
     private BigDecimal previousClose;
     private BigDecimal change;
     private BigDecimal changePercent;
+    private Long volume;
     private String sector;
     private String exchange;
+    private String logo;
+    private String weburl;
     private Instant updatedAt;
 }

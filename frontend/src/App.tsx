@@ -13,6 +13,8 @@ import { StockDetails } from './pages/StockDetails';
 import { News } from './pages/News';
 import { AiAssistant } from './pages/AiAssistant';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { Watchlist } from './pages/Watchlist';
+
 
 // Route guards to protect private views
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -49,6 +51,7 @@ function App() {
           <Route path="/holdings" element={<PrivateRoute><Holdings /></PrivateRoute>} />
           <Route path="/transactions" element={<PrivateRoute><Transactions /></PrivateRoute>} />
           <Route path="/stocks/:symbol" element={<PrivateRoute><StockDetails /></PrivateRoute>} />
+          <Route path="/watchlist" element={<PrivateRoute><Watchlist /></PrivateRoute>} />
           <Route path="/news" element={<PrivateRoute><News /></PrivateRoute>} />
           <Route path="/ai" element={<PrivateRoute><AiAssistant /></PrivateRoute>} />
 

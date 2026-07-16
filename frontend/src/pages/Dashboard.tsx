@@ -124,8 +124,60 @@ export const Dashboard: React.FC = () => {
   const totalPnlPercent = portfolio ? Number(portfolio.totalPnlPercent) : 0;
   const isPnlPositive = totalPnl >= 0;
 
+  const isMarketOpen = () => {
+    const now = new Date();
+    const estTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const day = estTime.getDay();
+    const hours = estTime.getHours();
+    const minutes = estTime.getMinutes();
+    if (day === 0 || day === 6) return false;
+    const timeInMins = hours * 60 + minutes;
+    return timeInMins >= 9 * 60 + 30 && timeInMins <= 16 * 60;
+  };
+
   return (
     <div className="space-y-6">
+      {/* Market Status & Indices Bar */}
+      <div className="glass-card p-4 rounded-2xl border border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex items-center space-x-3">
+          <span className="text-xs text-mutedText font-semibold uppercase tracking-wider">Market Status:</span>
+          {isMarketOpen() ? (
+            <span className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-success/15 border border-success/20 text-success text-[10px] font-bold uppercase tracking-wider animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-success" />
+              <span>Active / Open</span>
+            </span>
+          ) : (
+            <span className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-danger/15 border border-danger/20 text-danger text-[10px] font-bold uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-danger opacity-75" />
+              <span>Closed</span>
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-4 w-full md:w-auto text-xs">
+          <div className="bg-[#0B1020]/60 border border-white/5 rounded-xl px-4 py-2 text-center md:text-left flex items-center justify-between space-x-3">
+            <div>
+              <span className="text-[9px] text-mutedText font-bold uppercase tracking-wider block">S&P 500</span>
+              <span className="font-extrabold text-white block mt-0.5">$5,520.10</span>
+            </div>
+            <span className="text-[10px] text-success font-bold bg-success/10 px-1.5 py-0.5 rounded">+0.42%</span>
+          </div>
+          <div className="bg-[#0B1020]/60 border border-white/5 rounded-xl px-4 py-2 text-center md:text-left flex items-center justify-between space-x-3">
+            <div>
+              <span className="text-[9px] text-mutedText font-bold uppercase tracking-wider block">NASDAQ</span>
+              <span className="font-extrabold text-white block mt-0.5">$18,250.45</span>
+            </div>
+            <span className="text-[10px] text-success font-bold bg-success/10 px-1.5 py-0.5 rounded">+0.89%</span>
+          </div>
+          <div className="bg-[#0B1020]/60 border border-white/5 rounded-xl px-4 py-2 text-center md:text-left flex items-center justify-between space-x-3">
+            <div>
+              <span className="text-[9px] text-mutedText font-bold uppercase tracking-wider block">Dow Jones</span>
+              <span className="font-extrabold text-white block mt-0.5">$39,120.30</span>
+            </div>
+            <span className="text-[10px] text-danger font-bold bg-danger/10 px-1.5 py-0.5 rounded">-0.12%</span>
+          </div>
+        </div>
+      </div>
+
       {/* Top Banner Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Portfolio Value Card */}
