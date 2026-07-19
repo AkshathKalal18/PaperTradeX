@@ -100,57 +100,61 @@ export const StockDetails: React.FC = () => {
       } catch (err) {
         console.error('Interval update failed:', err);
       }
-    }, 10000); // 10s interval for refresh
+    }, 20000); // 20s interval — matches cache TTL
     return () => clearInterval(interval);
   }, [symbol]);
 
-  // TradingView Advanced Chart Integration
+  // TradingView Advanced Chart Widget Integration
   useEffect(() => {
     if (loading || !stock) return;
 
-    const scriptId = 'tradingview-widget-script';
-    let script = document.getElementById(scriptId) as HTMLScriptElement;
+    const containerId = 'tradingview_chart_container';
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
 
-    const initWidget = () => {
-      if (typeof window !== 'undefined' && (window as any).TradingView) {
-        // Map symbol: e.g. BINANCE:BTCUSDT or NASDAQ:AAPL or NYSE:NIO
-        let exchange = stock.exchange || 'NASDAQ';
-        if (exchange.toUpperCase() === 'NEW YORK STOCK EXCHANGE') {
-          exchange = 'NYSE';
-        }
-        new (window as any).TradingView.widget({
-          autosize: true,
-          symbol: `${exchange}:${stock.symbol}`,
-          interval: 'D',
-          timezone: 'Etc/UTC',
-          theme: 'dark',
-          style: '1',
-          locale: 'en',
-          enable_publishing: false,
-          hide_side_toolbar: false,
-          allow_symbol_change: true,
-          container_id: 'tradingview_chart_container',
-          studies: [],
-        });
-      }
-    };
-
-    if (!script) {
-      script = document.createElement('script');
-      script.id = scriptId;
-      script.src = 'https://s3.tradingview.com/tv.js';
-      script.type = 'text/javascript';
-      script.async = true;
-      script.onload = initWidget;
-      document.head.appendChild(script);
-    } else {
-      if ((window as any).TradingView) {
-        initWidget();
-      } else {
-        script.onload = initWidget;
-      }
+    // Resolve exchange for TradingView symbol notation
+    let exchange = stock.exchange || 'NASDAQ';
+    const exchangeUpper = exchange.toUpperCase();
+    if (exchangeUpper === 'NEW YORK STOCK EXCHANGE' || exchangeUpper === 'NYSE MKT' || exchangeUpper === 'BATS') {
+      exchange = 'NYSE';
+    } else if (exchangeUpper === 'NASDAQ NMS - GLOBAL MARKET' || exchangeUpper === 'NASDAQ NMS' || exchangeUpper === 'NMS') {
+      exchange = 'NASDAQ';
+    } else if (exchangeUpper === 'CBOE BZX U.S. EQUITIES EXCHANGE') {
+      exchange = 'CBOE';
     }
-  }, [loading, symbol, stock]);
+
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+    script.type = 'text/javascript';
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      autosize: true,
+      symbol: `${exchange}:${stock.symbol}`,
+      interval: 'D',
+      timezone: 'America/New_York',
+      theme: 'dark',
+      style: '1',
+      locale: 'en',
+      backgroundColor: 'rgba(11, 16, 32, 0)',
+      gridColor: 'rgba(255, 255, 255, 0.04)',
+      allow_symbol_change: false,
+      calendar: false,
+      support_host: 'https://www.tradingview.com',
+      hide_top_toolbar: false,
+      hide_legend: false,
+      save_image: false,
+      withdateranges: true,
+      range: '12M',
+      hide_side_toolbar: false,
+    });
+
+    container.appendChild(script);
+
+    return () => {
+      if (container) container.innerHTML = '';
+    };
+  }, [loading, symbol, stock?.symbol]);
 
   const toggleWatchlist = async () => {
     if (!stock) return;
@@ -254,7 +258,7 @@ export const StockDetails: React.FC = () => {
           </div>
         </div>
 
-        {/* Candlestick Chart (TradingView widget container) */}
+        {/* Candlestick Chart (TradingView Advanced Chart Widget) */}
         <div className="glass-card p-4 rounded-2xl border border-white/5 relative">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs text-mutedText font-semibold uppercase tracking-wider">TradingView Real-time Chart</span>
@@ -263,8 +267,8 @@ export const StockDetails: React.FC = () => {
               <span className="text-[10px] font-bold text-success uppercase tracking-widest">Live</span>
             </span>
           </div>
-          <div className="rounded-xl overflow-hidden min-h-[380px] bg-[#131722] border border-white/5 relative">
-            <div id="tradingview_chart_container" className="absolute inset-0 w-full h-full" />
+          <div className="tradingview-widget-container rounded-xl overflow-hidden bg-[#131722] border border-white/5" style={{ height: '500px' }}>
+            <div id="tradingview_chart_container" className="w-full h-full" />
           </div>
         </div>
 

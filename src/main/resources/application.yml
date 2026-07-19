@@ -3,6 +3,7 @@ spring:
     name: papertradex-backend
   cache:
     type: caffeine
+    cache-names: quotes,candles,search,news,marketStatus
     caffeine:
       spec: expireAfterWrite=30s
 

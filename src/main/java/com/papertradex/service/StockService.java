@@ -12,4 +12,5 @@ public interface StockService {
     List<Map<String, Object>> getCandlestickData(String symbol, int days);
     List<StockResponse> getTopGainers();
     List<StockResponse> getTopLosers();
+    Map<String, Object> getMarketStatus();
 }

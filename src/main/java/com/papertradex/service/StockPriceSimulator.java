@@ -21,9 +21,20 @@ public class StockPriceSimulator {
     private final StockRepository stockRepository;
     private final Random random = new Random();
 
+    @org.springframework.beans.factory.annotation.Value("${finnhub.api.key:}")
+    private String finnhubKey;
+
+    @org.springframework.beans.factory.annotation.Value("${fmp.api.key:}")
+    private String fmpKey;
+
     @Scheduled(fixedDelay = 5000)
     @Transactional
     public void simulatePriceMovements() {
+        if ((finnhubKey != null && !finnhubKey.trim().isEmpty()) || (fmpKey != null && !fmpKey.trim().isEmpty())) {
+            log.debug("Real-time API key is active. Skipping stock price simulation.");
+            return;
+        }
+
         List<Stock> stocks = stockRepository.findAll();
         if (stocks.isEmpty()) return;
 

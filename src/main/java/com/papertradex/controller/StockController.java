@@ -47,4 +47,9 @@ public class StockController {
     public ResponseEntity<ApiResponse<List<StockResponse>>> getTopLosers() {
         return ResponseEntity.ok(ApiResponse.success(stockService.getTopLosers()));
     }
+
+    @GetMapping("/market/status")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getMarketStatus() {
+        return ResponseEntity.ok(ApiResponse.success(stockService.getMarketStatus()));
+    }
 }

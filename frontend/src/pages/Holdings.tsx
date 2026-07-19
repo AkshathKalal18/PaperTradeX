@@ -42,7 +42,7 @@ export const Holdings: React.FC = () => {
 
   useEffect(() => {
     fetchHoldings();
-    const interval = setInterval(fetchHoldings, 5000);
+    const interval = setInterval(fetchHoldings, 20000);
     return () => clearInterval(interval);
   }, []);
 

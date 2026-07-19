@@ -46,7 +46,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       }
     };
     fetchTicker();
-    const interval = setInterval(fetchTicker, 10000);
+    const interval = setInterval(fetchTicker, 20000);
     return () => clearInterval(interval);
   }, []);
 

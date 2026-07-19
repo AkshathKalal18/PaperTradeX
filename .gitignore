@@ -41,4 +41,8 @@ frontend/node_modules/
 frontend/dist/
 frontend/.oxlintrc.json
 frontend/.tmp/
+node_modules/
+dist/
+application-local.properties
+
 

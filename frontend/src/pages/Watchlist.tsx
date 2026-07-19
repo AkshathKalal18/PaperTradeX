@@ -50,7 +50,7 @@ export const Watchlist: React.FC = () => {
 
   useEffect(() => {
     fetchWatchlist();
-    const interval = setInterval(fetchWatchlist, 10000); // refresh every 10s
+    const interval = setInterval(fetchWatchlist, 20000); // refresh every 20s
     return () => clearInterval(interval);
   }, []);
 

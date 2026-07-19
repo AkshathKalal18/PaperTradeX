@@ -8,4 +8,5 @@ public interface MarketDataService {
     StockResponse getLiveStockData(String symbol);
     List<Map<String, Object>> getCandlestickData(String symbol, String resolution, long from, long to);
     List<Map<String, String>> searchSymbols(String query);
+    Map<String, Object> getMarketStatus();
 }

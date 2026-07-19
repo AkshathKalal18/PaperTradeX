@@ -86,6 +86,11 @@ public class StockServiceImpl implements StockService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public Map<String, Object> getMarketStatus() {
+        return marketDataService.getMarketStatus();
+    }
+
     public StockResponse toResponse(Stock stock) {
         BigDecimal price = stock.getLastPrice();
         return StockResponse.builder()

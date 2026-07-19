@@ -99,11 +99,78 @@ public class MarketDataServiceImpl implements MarketDataService {
                     .build();
 
         } catch (HttpClientErrorException.TooManyRequests e) {
-            log.error("Finnhub rate limit exceeded (HTTP 429). Falling back to cached/database data for: {}", sym);
-            return getFallbackData(sym);
+            log.error("Finnhub rate limit exceeded (HTTP 429). Trying FMP fallback for: {}", sym);
+            return getFmpLiveStockData(sym);
         } catch (Exception e) {
-            log.error("Error calling Finnhub API for: {}. Error: {}", sym, e.getMessage());
-            return getFallbackData(sym);
+            log.error("Error calling Finnhub API for: {}. Trying FMP fallback. Error: {}", sym, e.getMessage());
+            return getFmpLiveStockData(sym);
+        }
+    }
+
+    private StockResponse getFmpLiveStockData(String symbol) {
+        if (fmpKey == null || fmpKey.trim().isEmpty()) {
+            return getFallbackData(symbol);
+        }
+        try {
+            log.info("Fetching live stock data from FMP fallback for: {}", symbol);
+            String quoteUrl = String.format("https://financialmodelingprep.com/api/v3/quote/%s?apikey=%s", symbol, fmpKey);
+            List<Map<String, Object>> quotes = restTemplate.getForObject(quoteUrl, List.class);
+            if (quotes == null || quotes.isEmpty()) {
+                return getFallbackData(symbol);
+            }
+            Map<String, Object> quote = quotes.get(0);
+
+            String companyName = quote.getOrDefault("name", symbol + " Corp").toString();
+            BigDecimal currentPrice = toBigDecimal(quote.get("price"));
+            BigDecimal open = toBigDecimal(quote.get("open"));
+            BigDecimal high = toBigDecimal(quote.get("dayHigh"));
+            BigDecimal low = toBigDecimal(quote.get("dayLow"));
+            BigDecimal previousClose = toBigDecimal(quote.get("previousClose"));
+            BigDecimal change = toBigDecimal(quote.get("change"));
+            BigDecimal changePercent = toBigDecimal(quote.get("changesPercentage"));
+            Long volume = quote.get("volume") != null ? Long.parseLong(quote.get("volume").toString()) : 1500000L;
+
+            // Fetch profile detail from FMP
+            String sector = "Technology";
+            String exchange = "NASDAQ";
+            String logo = "";
+            String weburl = "";
+            try {
+                String profileUrl = String.format("https://financialmodelingprep.com/api/v3/profile/%s?apikey=%s", symbol, fmpKey);
+                List<Map<String, Object>> profiles = restTemplate.getForObject(profileUrl, List.class);
+                if (profiles != null && !profiles.isEmpty()) {
+                    Map<String, Object> profile = profiles.get(0);
+                    sector = profile.getOrDefault("sector", "Technology").toString();
+                    exchange = profile.getOrDefault("exchangeShortName", "NASDAQ").toString();
+                    logo = profile.getOrDefault("image", "").toString();
+                    weburl = profile.getOrDefault("website", "").toString();
+                }
+            } catch (Exception pe) {
+                log.warn("FMP profile fetch failed: {}", pe.getMessage());
+            }
+
+            updateStockInDb(symbol, companyName, currentPrice, previousClose, change, changePercent, sector, exchange);
+
+            return StockResponse.builder()
+                    .symbol(symbol)
+                    .companyName(companyName)
+                    .lastPrice(currentPrice)
+                    .open(open)
+                    .high(high)
+                    .low(low)
+                    .previousClose(previousClose)
+                    .change(change)
+                    .changePercent(changePercent)
+                    .volume(volume)
+                    .sector(sector)
+                    .exchange(exchange)
+                    .logo(logo)
+                    .weburl(weburl)
+                    .updatedAt(Instant.now())
+                    .build();
+        } catch (Exception ex) {
+            log.error("FMP quote fetch failed for symbol: {}. Falling back to database.", symbol, ex);
+            return getFallbackData(symbol);
         }
     }
 
@@ -306,6 +373,69 @@ public class MarketDataServiceImpl implements MarketDataService {
         } catch (Exception e) {
             log.error("Failed to update stock {} in local database. Error: {}", symbol, e.getMessage());
         }
+    }
+
+    @Value("${fmp.api.key:}")
+    private String fmpKey;
+
+    @Override
+    @Cacheable(value = "marketStatus", key = "'status'")
+    public Map<String, Object> getMarketStatus() {
+        log.info("Fetching market status");
+        
+        // 1. Try Finnhub US market status
+        if (apiKey != null && !apiKey.trim().isEmpty()) {
+            try {
+                String url = String.format("https://finnhub.io/api/v1/stock/market-status?exchange=US&token=%s", apiKey);
+                Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+                if (response != null && response.containsKey("isOpen")) {
+                    return response;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch market status from Finnhub: {}", e.getMessage());
+            }
+        }
+
+        // 2. Fallback to Financial Modeling Prep (FMP)
+        if (fmpKey != null && !fmpKey.trim().isEmpty()) {
+            try {
+                String url = String.format("https://financialmodelingprep.com/api/v3/market-hours?apikey=%s", fmpKey);
+                List<Map<String, Object>> response = restTemplate.getForObject(url, List.class);
+                if (response != null && !response.isEmpty()) {
+                    Map<String, Object> first = response.get(0);
+                    boolean isOpen = Boolean.TRUE.equals(first.get("isTheMarketOpen"));
+                    return Map.of(
+                        "exchange", "US",
+                        "isOpen", isOpen,
+                        "session", isOpen ? "regular" : "closed",
+                        "timezone", "America/New_York"
+                    );
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch market status from FMP: {}", e.getMessage());
+            }
+        }
+
+        // 3. Fallback to local system time check
+        boolean open = isUSMarketOpenLocalCheck();
+        return Map.of(
+            "exchange", "US",
+            "isOpen", open,
+            "session", open ? "regular" : "closed",
+            "timezone", "America/New_York"
+        );
+    }
+
+    private boolean isUSMarketOpenLocalCheck() {
+        java.time.ZonedDateTime estTime = java.time.ZonedDateTime.now(java.time.ZoneId.of("America/New_York"));
+        java.time.DayOfWeek day = estTime.getDayOfWeek();
+        if (day == java.time.DayOfWeek.SATURDAY || day == java.time.DayOfWeek.SUNDAY) {
+            return false;
+        }
+        int hour = estTime.getHour();
+        int minute = estTime.getMinute();
+        int timeInMins = hour * 60 + minute;
+        return timeInMins >= 9 * 60 + 30 && timeInMins <= 16 * 60;
     }
 
     private BigDecimal toBigDecimal(Object value) {

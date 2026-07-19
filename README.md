@@ -234,6 +234,21 @@ And **8 stocks** are seeded with simulated live price data (prices update every 
 
 ---
 
+## 📷 Screenshots
+
+> *Screenshots placeholder section. Live application UI images will be added here.*
+
+| Dashboard | Stock Details |
+|---|---|
+| ![Dashboard Placeholder](https://via.placeholder.com/400x250?text=Dashboard+UI) | ![Stock Details Placeholder](https://via.placeholder.com/400x250?text=Stock+Details+UI) |
+
+| Watchlist | AI Advisor Chat |
+|---|---|
+| ![Watchlist Placeholder](https://via.placeholder.com/400x250?text=Watchlist+UI) | ![AI Advisor Placeholder](https://via.placeholder.com/400x250?text=AI+Advisor+UI) |
+
+---
+
+
 ## 📦 Tech Stack
 
 ### Backend
@@ -275,6 +290,16 @@ Import `docs/PaperTradeX.postman_collection.json` into Postman to get all API en
 The collection includes:
 - Auto-extracted JWT token after login (saved as `{{token}}` variable)
 - Environment variables: `{{base_url}}` = `http://localhost:8080/api`
+
+---
+
+## 🔮 Future Enhancements
+
+- 📈 **Real-time WebSockets**: Integrate WebSockets for live stock price updates without polling.
+- 📱 **Mobile Application**: Build a cross-platform mobile app using React Native.
+- 🏆 **Leaderboards**: Introduce user leaderboards and social features to compare trading performance.
+- 🤖 **Advanced AI Analytics**: Enhance the AI advisor with deep portfolio analysis and automated trading suggestions.
+- 💵 **Multi-currency Support**: Support portfolios and trading in multiple global currencies.
 
 ---
 
